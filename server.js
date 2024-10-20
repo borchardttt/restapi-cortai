@@ -6,6 +6,7 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+const bcrypt = require('bcrypt');
 
 const pool = new Pool({
 	user: process.env.PGUSER,
@@ -14,15 +15,23 @@ const pool = new Pool({
 	password: process.env.PGPASSWORD,
 	port: process.env.PGPORT,
 	ssl: {
-		rejectUnauthorized: false, // Pode ser útil em alguns ambientes, mas use com cautela em produção
+		rejectUnauthorized: false,
 	},
 });
 
-// Rota para criar um novo usuário
 app.post('/api/users', async (req, res) => {
-	const { name, email } = req.body;
+	const { name, email, phone_contact, type, password } = req.body;
+
+	if (!name || !email || !phone_contact || !type || !password) {
+		return res.status(400).json({ error: 'All fields are required' });
+	}
+
 	try {
-		const result = await pool.query('INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *', [name, email]);
+		const hashedPassword = await bcrypt.hash(password, 10);
+		const result = await pool.query(
+			'INSERT INTO users (name, email, phone_contact, type, password) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+			[name, email, phone_contact, type, hashedPassword]
+		);
 		res.status(201).json(result.rows[0]);
 	} catch (err) {
 		console.error(err.message);
@@ -30,7 +39,6 @@ app.post('/api/users', async (req, res) => {
 	}
 });
 
-// Teste de conexão
 app.get('/api/test-connection', async (req, res) => {
 	try {
 		const result = await pool.query('SELECT NOW()');
