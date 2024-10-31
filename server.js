@@ -18,6 +18,23 @@ const pool = new Pool({
 		rejectUnauthorized: false,
 	},
 });
+app.get('/api/users', async(req, res) => {
+	try {
+		const result = await pool.query('SELECT * from users');
+		res.json(result);
+	} catch (error) {
+		console.error(error)
+	}
+});
+
+app.get('/api/barbers', async (req, res) => {
+	try{
+		const result = await pool.query('SELECT * from users WHERE type = "barbeiro"');
+		res.json(result);
+	} catch (error){
+		console.error(error);
+	}
+})
 
 app.post('/api/users', async (req, res) => {
 	const { name, email, phone_contact, type, password } = req.body;
@@ -38,6 +55,33 @@ app.post('/api/users', async (req, res) => {
 		res.status(500).json({ error: 'Database error', details: err.message });
 	}
 });
+app.post('/api/auth', async (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ error: 'Senha e e-mail são obrigatórios' });
+	}
+
+	try {
+		const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+		
+		if (result.rows.length === 0) {
+			return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
+		}
+
+		const user = result.rows[0];
+		const isPasswordValid = await bcrypt.compare(password, user.password);
+		
+		if (!isPasswordValid) {
+			return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
+		}
+
+		res.status(200).json({ authenticated: true });
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).json({ error: 'Database error', details: err.message });
+	}
+});
 
 app.get('/api/test-connection', async (req, res) => {
 	try {
@@ -49,7 +93,9 @@ app.get('/api/test-connection', async (req, res) => {
 	}
 });
 
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
 	console.log(`Server is running on port ${PORT}`);
 });
+
