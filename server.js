@@ -142,6 +142,16 @@ app.get('/api/appointments/client/:id', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
+app.get('/api/appointments/barber/:id', async (req, res) => {
+	const { id } = req.params;
+	try {
+		const result = await pool.query('SELECT * FROM appointments WHERE barber_id = $1', [id]);
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: 'Database error' });
+	}
+});
 
 app.post('/api/appointments', async (req, res) => {
 	const { client_id, barber_id, service_id, appointment_date, status, value } = req.body;
@@ -177,6 +187,30 @@ app.post('/api/check-appointment-availability', async (req, res) => {
 		}
 
 		res.json({ available: true });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: 'Database error' });
+	}
+});
+app.put('/api/appointments/:id/status', async (req, res) => {
+	const { id } = req.params;
+	const { status } = req.body;
+
+	if (!['realizado', 'cancelado'].includes(status)) {
+		return res.status(400).json({ error: 'Status inválido' });
+	}
+
+	try {
+		const result = await pool.query(
+			'UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *',
+			[status, id]
+		);
+
+		if (result.rows.length === 0) {
+			return res.status(404).json({ error: 'Agendamento não encontrado' });
+		}
+
+		res.json(result.rows[0]);
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ error: 'Database error' });
