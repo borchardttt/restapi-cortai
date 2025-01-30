@@ -48,6 +48,7 @@ app.post('/api/users', async (req, res) => {
 	}
 });
 
+
 app.get('/api/users/barbers', async (req, res) => {
 	try {
 		const result = await pool.query('SELECT * FROM users WHERE type = $1', ['barbeiro']);
