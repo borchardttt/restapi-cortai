@@ -156,7 +156,32 @@ app.post('/api/appointments', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
+app.post('/api/checkAppointmentAvailability', async (req, res) => {
+	const { barber_id, appointment_date } = req.body;
 
+	if (!barber_id || !appointment_date) {
+		return res.status(400).json({ error: 'Barbeiro e data são obrigatórios' });
+	}
+
+	try {
+		const result = await pool.query(
+			'SELECT * FROM appointments WHERE barber_id = $1 AND appointment_date = $2',
+			[barber_id, appointment_date]
+		);
+
+		if (result.rows.length > 0) {
+			return res.status(409).json({
+				available: false,
+				message: 'Já existem atendimentos agendados para esse horário.'
+			});
+		}
+
+		res.json({ available: true });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: 'Database error' });
+	}
+});
 // CRUD para Earnings
 app.get('/api/earnings', async (req, res) => {
 	try {
