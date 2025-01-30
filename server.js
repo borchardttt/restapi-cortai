@@ -48,7 +48,6 @@ app.post('/api/users', async (req, res) => {
 	}
 });
 
-
 app.get('/api/users/barbers', async (req, res) => {
 	try {
 		const result = await pool.query('SELECT * FROM users WHERE type = $1', ['barbeiro']);
@@ -80,8 +79,6 @@ app.post('/api/auth', async (req, res) => {
 			return res.status(401).json({ error: 'Senha inválida.' });
 		}
 
-		const token = jwt.sign({ id: user.id, email: user.email, type: user.type }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
 		res.status(200).json({
 			authenticated: true,
 			user: {
@@ -89,14 +86,14 @@ app.post('/api/auth', async (req, res) => {
 				name: user.name,
 				email: user.email,
 				type: user.type
-			},
-			token
+			}
 		});
 	} catch (err) {
 		console.error(err.message);
 		res.status(500).json({ error: 'Database error', details: err.message });
 	}
 });
+
 
 
 // CRUD para Services
