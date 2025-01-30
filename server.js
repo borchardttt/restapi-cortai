@@ -156,7 +156,7 @@ app.post('/api/appointments', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
-app.post('/api/checkAppointmentAvailability', async (req, res) => {
+app.post('/api/check-appointment-availability', async (req, res) => {
 	const { barber_id, appointment_date } = req.body;
 
 	if (!barber_id || !appointment_date) {
