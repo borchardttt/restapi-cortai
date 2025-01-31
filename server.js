@@ -212,8 +212,8 @@ app.put('/api/appointments/:id/status', async (req, res) => {
 
 		res.json(result.rows[0]);
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ error: 'Database error' });
+		console.error("Erro ao atualizar o agendamento:", error);
+		res.status(500).json({ error: 'Erro ao atualizar o agendamento', details: error.message });
 	}
 });
 // CRUD para Earnings
