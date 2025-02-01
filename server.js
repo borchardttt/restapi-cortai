@@ -192,30 +192,38 @@ app.post('/api/check-appointment-availability', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
-app.put('/api/appointments/:id/status', async (req, res) => {
+app.put('/api/appointments/:id/complete', async (req, res) => {
 	const { id } = req.params;
-	const { status } = req.body;
-
-	if (!['realizado', 'cancelado'].includes(status)) {
-		return res.status(400).json({ error: 'Status inválido' });
-	}
 
 	try {
-		const result = await pool.query(
+		const appointmentResult = await pool.query(
 			'UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *',
-			[status, id]
+			['realizado', id]
 		);
 
-		if (result.rows.length === 0) {
+		if (appointmentResult.rows.length === 0) {
 			return res.status(404).json({ error: 'Agendamento não encontrado' });
 		}
 
-		res.json(result.rows[0]);
+		const appointment = appointmentResult.rows[0];
+
+		const earningResult = await pool.query(
+			'INSERT INTO earnings (barber_id, earning_date, value, scheduling_id) VALUES ($1, $2, $3, $4) RETURNING *',
+			[appointment.barber_id, new Date().toISOString().split("T")[0], appointment.value, appointment.id]
+		);
+
+		res.json({
+			message: 'Agendamento concluído e ganho registrado com sucesso!',
+			appointment: appointment,
+			earning: earningResult.rows[0]
+		});
+
 	} catch (error) {
-		console.error("Erro ao atualizar o agendamento:", error);
-		res.status(500).json({ error: 'Erro ao atualizar o agendamento', details: error.message });
+		console.error("Erro ao completar o agendamento:", error);
+		res.status(500).json({ error: 'Erro ao completar o agendamento', details: error.message });
 	}
 });
+
 // CRUD para Earnings
 app.get('/api/earnings', async (req, res) => {
 	try {
@@ -238,19 +246,6 @@ app.get('/api/earnings/barber/:id', async (req, res) => {
 	}
 });
 
-app.post('/api/earnings', async (req, res) => {
-	const { barber_id, earning_date, value, scheduling_id } = req.body;
-	try {
-		const result = await pool.query(
-			'INSERT INTO earnings (barber_id, earning_date, value, scheduling_id) VALUES ($1, $2, $3, $4) RETURNING *',
-			[barber_id, earning_date, value, scheduling_id]
-		);
-		res.status(201).json(result.rows[0]);
-	} catch (error) {
-		console.error(error);
-		res.status(500).json({ error: 'Database error' });
-	}
-});
 
 app.get('/api/test-connection', async (req, res) => {
 	try {
